@@ -7,10 +7,12 @@ import time
 from dataclasses import dataclass
 from typing import Optional, List
 
+
 from ofrak import ResourceFilter
-from ofrak.core import CodeRegion
+from ofrak.core import CodeRegion, Program
 from ofrak.component.analyzer import Analyzer
 from ofrak.component.modifier import Modifier
+from ofrak.core.architecture import ProgramAttributes
 from ofrak.model.component_model import ComponentConfig
 from ofrak.resource import Resource, ResourceFactory
 from ofrak.service.data_service_i import DataServiceInterface
@@ -272,3 +274,18 @@ class GhidraCodeRegionModifier(Modifier, OfrakGhidraMixin):
             )
         else:
             LOGGER.debug("No OFRAK code regions to match in Ghidra")
+
+
+class GhidraEmuAnalyzer(Analyzer, OfrakGhidraMixin):
+    id = b"GhidraEmuAnalyzer"
+    targets = (Program,)
+    outputs = (ProgramAttributes,)
+
+    get_emu_script = OfrakGhidraScript(
+        os.path.join(os.path.join(CORE_OFRAK_GHIDRA_SCRIPTS), "GetStdOutEmu.java"),
+    )
+
+    async def analyze(self, resource, config=None):
+        ghidra_project = await OfrakGhidraMixin.get_ghidra_project(resource)
+        res = await self.get_emu_script.call_script(resource)
+        return res
