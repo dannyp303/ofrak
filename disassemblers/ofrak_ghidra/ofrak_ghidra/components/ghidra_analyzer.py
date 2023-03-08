@@ -12,11 +12,13 @@ from ofrak import ResourceFilter
 from ofrak.core import CodeRegion, Program
 from ofrak.component.analyzer import Analyzer
 from ofrak.component.modifier import Modifier
-from ofrak.core.architecture import ProgramAttributes
+from ofrak.core.complex_block import ComplexBlock
+from ofrak.core.instruction import Instruction
 from ofrak.model.component_model import ComponentConfig
+from ofrak.model.resource_model import ResourceAttributes
 from ofrak.resource import Resource, ResourceFactory
 from ofrak.service.data_service_i import DataServiceInterface
-from ofrak.service.resource_service_i import ResourceServiceInterface
+from ofrak.service.resource_service_i import ResourceServiceInterface, ResourceSort
 from ofrak_ghidra.constants import (
     GHIDRA_HEADLESS_EXEC,
     GHIDRA_USER,
@@ -276,16 +278,67 @@ class GhidraCodeRegionModifier(Modifier, OfrakGhidraMixin):
             LOGGER.debug("No OFRAK code regions to match in Ghidra")
 
 
+@dataclass(**ResourceAttributes.DATACLASS_PARAMS)
+class StdoutAttributes(ResourceAttributes):
+    stdout: str
+
+
+@dataclass
+class GhidraEmuAnalyzerConfig(ComponentConfig):
+    func_name: str
+    func_ret: Optional[int] = None
+
+
 class GhidraEmuAnalyzer(Analyzer, OfrakGhidraMixin):
     id = b"GhidraEmuAnalyzer"
     targets = (Program,)
-    outputs = (ProgramAttributes,)
+    outputs = (StdoutAttributes,)
 
     get_emu_script = OfrakGhidraScript(
         os.path.join(os.path.join(CORE_OFRAK_GHIDRA_SCRIPTS), "GetStdOutEmu.java"),
     )
 
-    async def analyze(self, resource, config=None):
+    async def analyze(self, resource, config: GhidraEmuAnalyzerConfig):
+        if config.func_ret is None:
+            cbs: List[ComplexBlock] = await resource.get_descendants_as_view(
+                v_type=ComplexBlock,
+                r_filter=ResourceFilter(
+                    tags=[
+                        ComplexBlock,
+                    ]
+                ),
+            )
+            if len(cbs) == 0:
+                await resource.unpack_recursively(
+                    do_not_unpack=[
+                        ComplexBlock,
+                    ]
+                )
+                cbs: List[ComplexBlock] = await resource.get_descendants_as_view(
+                    v_type=ComplexBlock,
+                    r_filter=ResourceFilter(
+                        tags=[
+                            ComplexBlock,
+                        ]
+                    ),
+                )
+            for cb in cbs:
+                if cb.name == config.func_name:
+                    await cb.resource.unpack_recursively()
+                    instrs = await cb.resource.get_descendants_as_view(
+                        Instruction,
+                        r_filter=ResourceFilter(
+                            tags=[
+                                Instruction,
+                            ]
+                        ),
+                        r_sort=ResourceSort(attribute=Instruction.VirtualAddress),
+                    )
+                    ret_instr: Instruction = instrs[-1]
+                    config.func_ret = ret_instr.virtual_address
         ghidra_project = await OfrakGhidraMixin.get_ghidra_project(resource)
-        res = await self.get_emu_script.call_script(resource)
-        return res
+        res = await self.get_emu_script.call_script(
+            resource, config.func_name, str(config.func_ret)
+        )
+        res = res["result"]
+        return StdoutAttributes(res)

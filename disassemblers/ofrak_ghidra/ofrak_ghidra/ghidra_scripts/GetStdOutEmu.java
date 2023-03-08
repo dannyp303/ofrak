@@ -30,12 +30,14 @@ public class GetStdOutEmu extends HeadlessScript {
     @Override
     public void run() throws Exception {
         try{
+            String func = getScriptArgs()[0];
+            Long ret_addr = Long.parseLong(getScriptArgs()[1]);
             Emulator emu = new Emulator();
             PrintfHookHandler handler = new PrintfHookHandler(emu);
             GhidraFunction printf = new GhidraFunction(getGlobalFunctions("printf").get(0), emu);
             RetHook hook = new RetHook(printf, handler);
             emu.add_hook(hook);
-            emu.run(0x13e4);
+            emu.run(func, ret_addr);
             String res = String.format("{\"result\":\"%s\"}", emu.stdOut.replaceAll("\n", "\\\\n"));
             storeHeadlessValue("OfrakResult_GetStdOutEmu", res);
         } catch(Exception e) {
@@ -146,9 +148,9 @@ public class GetStdOutEmu extends HeadlessScript {
             return (String) data.getValue();
         }
 
-        public void run(long final_pc) throws Exception {
+        public void run(String func_name, Long final_pc) throws Exception {
             RegisterValue ctx_val;
-            Function fn = getGlobalFunctions("main").get(0);
+            Function fn = getGlobalFunctions(func_name).get(0);
             this.set_sp(0xf0000000);
             this.set_pc(fn.getEntryPoint().getOffset());
             Address pc = toAddr(this.get_pc());
