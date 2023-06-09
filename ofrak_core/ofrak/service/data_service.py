@@ -249,11 +249,10 @@ class FileDataService(DataService):
             shutil.rmtree(self._tempdir)
         os.mkdir(self._tempdir)
 
-    async def create_root(self, data_id: DataId, data: str) -> DataModel:
+    async def create_root(self, data_id: DataId, data: bytes) -> DataModel:
         if data_id in self._model_store:
             raise AlreadyExistError(f"A model with {data_id.hex()} already exists!")
-
-        new_model = DataModel(data_id, Range(0, os.stat(data).st_size), data_id)
+        new_model = DataModel(data_id, Range(0, len(data)), data_id)
 
         self._model_store[data_id] = new_model
         self._roots[data_id] = _FileDataRoot(new_model, data, self._tempdir)
