@@ -109,8 +109,10 @@
     tryHash = !!window.location.hash;
   let mouseX, selectedAnimal;
   const warnFileSize = 250 * 1024 * 1024;
+  const fileChunkSize = warnFileSize;
 
   async function createRootResource(f) {
+    let rootModel;
     if (
       f.size > warnFileSize &&
       !window.confirm(
@@ -122,15 +124,33 @@
       showRootResource = false;
       return;
     }
-
-    const rootModel = await fetch(
-      `${$settings.backendUrl}/create_root_resource?name=${f.name}`,
-      {
-        method: "POST",
-        body: await f.arrayBuffer(),
+    if (f.size > warnFileSize) {
+      for (var start = 0; start < f.size; start += fileChunkSize) {
+        let end = Math.min(start + fileChunkSize, f.size);
+        const result = await fetch(
+          `${$settings.backendUrl}/root_resource_chunk?name=${f.name}&addr=${start}`,
+          {
+            method: "POST",
+            body: await f.slice(start, end),
+          }
+        );
       }
-    ).then((r) => r.json());
 
+      rootModel = await fetch(
+        `${$settings.backendUrl}/create_chunked_root_resource?name=${f.name}`,
+        {
+          method: "POST",
+        }
+      ).then((r) => r.json());
+    } else {
+      rootModel = await fetch(
+        `${$settings.backendUrl}/create_root_resource?name=${f.name}`,
+        {
+          method: "POST",
+          body: await f.arrayBuffer(),
+        }
+      ).then((r) => r.json());
+    }
     rootResource = remote_model_to_resource(rootModel, resources);
     $selected = rootModel.id;
   }
