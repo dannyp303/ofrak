@@ -1,5 +1,8 @@
 import heapq
 import itertools
+import os
+import shutil
+import tempfile
 from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Generic
@@ -229,6 +232,116 @@ class DataService(DataServiceInterface):
             if size_diff != 0:
                 root.resize_range(patch_range, size_diff)
         root.data = bytes(new_root_data)
+
+        return [
+            DataPatchesResult(data_id, results_for_id)
+            for data_id, results_for_id in results.items()
+        ]
+
+
+class FileDataService(DataService):
+    def __init__(self):
+        self._model_store: Dict[DataId, DataModel] = dict()
+        self._roots: Dict[DataId, _FileDataRoot] = dict()
+        temproot = tempfile._get_default_tempdir()
+        self._tempdir = os.path.join(temproot, "ofrak")
+        if os.path.exists(self._tempdir):
+            shutil.rmtree(self._tempdir)
+        os.mkdir(self._tempdir)
+
+    async def create_root(self, data_id: DataId, data: str) -> DataModel:
+        if data_id in self._model_store:
+            raise AlreadyExistError(f"A model with {data_id.hex()} already exists!")
+
+        new_model = DataModel(data_id, Range(0, os.stat(data).st_size), data_id)
+
+        self._model_store[data_id] = new_model
+        self._roots[data_id] = _FileDataRoot(new_model, data, self._tempdir)
+
+    async def get_data(self, data_id: DataId, data_range: Optional[Range] = None) -> bytes:
+        model = self._get_by_id(data_id)
+        root = self._get_root_by_id(model.root_id)
+        with open(root.data, "rb") as data:
+            if data_range is not None:
+                translated_range = data_range.translate(model.range.start).intersect(
+                    root.model.range
+                )
+                data.seek(translated_range.start)
+                return data.read(translated_range.end - translated_range.start)
+            else:
+                data.seek(model.range.start)
+                return data.read(model.range.end - model.range.start)
+
+    def _apply_patches_to_root(
+        self,
+        root_data_id: DataId,
+        patches: List[DataPatch],
+    ) -> List[DataPatchesResult]:
+        root: _DataRoot = self._roots[root_data_id]
+        finalized_ordered_patches: List[Tuple[Range, bytes, int]] = []
+        resize_tracker = _PatchResizeTracker()
+
+        # Screen patches for inconsistencies/overlaps
+        # And translate them as required by preceding patches
+        raw_patch_ranges_in_root = []
+
+        for patch in patches:
+            target_model = self._get_by_id(patch.data_id)
+            patch_range_in_prepatch_root = self._get_range_in_root(target_model, patch.range)
+
+            if resize_tracker.overlaps_resized_range(patch_range_in_prepatch_root):
+                raise PatchOverlapError(
+                    f"Patch to {patch.range} of {patch.data_id.hex()} overlaps previously resized "
+                    f"area of {patch.data_id.hex()} and cannot be applied!"
+                )
+
+            raw_patch_ranges_in_root.append(patch_range_in_prepatch_root)
+            patch_range_in_patched_root = resize_tracker.translate_range(
+                patch_range_in_prepatch_root
+            )
+            models_intersecting_patch_range = root.get_children_with_boundaries_intersecting_range(
+                patch_range_in_prepatch_root
+            )
+
+            size_diff = len(patch.data) - patch.range.length()
+            if size_diff == 0:
+                finalized_ordered_patches.append(
+                    (patch_range_in_patched_root, patch.data, size_diff)
+                )
+            elif models_intersecting_patch_range:
+                raise PatchOverlapError(
+                    f"Because patch to {patch.data_id.hex()} resizes data by {size_diff} bytes, "
+                    f"the effects on {len(models_intersecting_patch_range)} model(s) "
+                    f"intersecting the patch range {patch.range} ({patch_range_in_patched_root} "
+                    f"in the root) could not be determined. If data must be resized, any resources "
+                    f"overlapping the data must be deleted before patching and re-created "
+                    f"afterwards along new data ranges. Intersecting models: {models_intersecting_patch_range}"
+                )
+            else:
+                finalized_ordered_patches.append(
+                    (patch_range_in_patched_root, patch.data, size_diff)
+                )
+                resize_tracker.add_new_resized_range(patch_range_in_patched_root, size_diff)
+
+        affected_ranges = Range.merge_ranges(raw_patch_ranges_in_root)
+
+        results = defaultdict(list)
+
+        for affected_id, affected_range in root.get_children_affected_by_ranges(affected_ranges):
+            results[affected_id].append(affected_range)
+
+        for affected_range in affected_ranges:
+            results[root_data_id].append(affected_range)
+
+        with open(root.data, "rb") as data:
+            new_root_data = bytearray(data.read())
+        # Apply finalized patches to data and data models
+        for patch_range, data, size_diff in finalized_ordered_patches:
+            new_root_data[patch_range.start : patch_range.end] = data
+            if size_diff != 0:
+                root.resize_range(patch_range, size_diff)
+        with open(root.data, "wb") as data:
+            data.write(bytes(new_root_data))
 
         return [
             DataPatchesResult(data_id, results_for_id)
@@ -654,6 +767,29 @@ class _DataRoot:
             merged_columns.append(_CompareFirstTuple(key, val))
 
         return merged_columns
+
+
+class _FileDataRoot(_DataRoot):
+    @property
+    def length(self) -> int:
+        with open(self.data, "rb") as data:
+            return len(data.read())
+
+    def __init__(self, model: DataModel, data: str, tempdir: str):
+        self.model: DataModel = model
+        self.data = os.path.join(tempdir, self.model.id.decode("utf-8"))
+        with open(self.data, "wb") as fh:
+            fh.write(data)
+        self._children: Dict[DataId, DataModel] = dict()
+
+        # A pair of sorted 2D arrays, where each "point" in the grid is a set of children's data IDs
+        # The (X, Y) coordinates of each grid correspond to the range of these children
+        # The coordinates are flipped between these 2 grids:
+        #   (x,y) in _grid_starts_first is (y,x) in _grid_ends_first
+        #   The same set object is shared by both points
+        # Sometimes it is more efficient to search in one grid or the other
+        self._grid_starts_first: _GridXAxisT = []  # X axis is range starts, Y axis is ends
+        self._grid_ends_first: _GridXAxisT = []  # X axis is range ends, Y axis is starts
 
 
 class _PatchResizeTracker:
