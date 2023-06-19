@@ -244,7 +244,7 @@ class FileDataService(DataService):
         self._model_store: Dict[DataId, DataModel] = dict()
         self._roots: Dict[DataId, _FileDataRoot] = dict()
         temproot = tempfile._get_default_tempdir()
-        self._tempdir = os.path.join(temproot, "ofrak")
+        self._tempdir = os.path.join(temproot, f"ofrak-{os.getpid()}")
         if os.path.exists(self._tempdir):
             shutil.rmtree(self._tempdir)
         os.mkdir(self._tempdir)
@@ -346,6 +346,10 @@ class FileDataService(DataService):
             DataPatchesResult(data_id, results_for_id)
             for data_id, results_for_id in results.items()
         ]
+
+    async def shutdown(self):
+        os.rmdir(self.root.data)
+        return await super().shutdown()
 
 
 T = TypeVar("T")
