@@ -348,7 +348,7 @@ class FileDataService(DataService):
         ]
 
     async def shutdown(self):
-        os.rmdir(self.root.data)
+        shutil.rmtree(self._tempdir)
         return await super().shutdown()
 
 
@@ -780,7 +780,7 @@ class _FileDataRoot(_DataRoot):
 
     def __init__(self, model: DataModel, data: str, tempdir: str):
         self.model: DataModel = model
-        self.data = os.path.join(tempdir, self.model.id.decode("utf-8"))
+        self.data = os.path.join(tempdir, self.model.id.hex())
         with open(self.data, "wb") as fh:
             fh.write(data)
         self._children: Dict[DataId, DataModel] = dict()
