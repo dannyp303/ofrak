@@ -184,6 +184,7 @@ class AiohttpOFRAKServer:
                 web.post("/{resource_id}/search_for_vaddr", self.search_for_vaddr),
                 web.post("/{resource_id}/search_for_string", self.search_for_string),
                 web.post("/{resource_id}/search_for_bytes", self.search_for_bytes),
+                web.get("/{resource_id}/get_ids_by_tag", self.get_ids_by_tag),
                 web.post("/{resource_id}/add_tag", self.add_tag),
                 web.post(
                     "/{resource_id}/add_flush_to_disk_to_script", self.add_flush_to_disk_to_script
@@ -796,6 +797,25 @@ class AiohttpOFRAKServer:
                     found_resources.append(ancestor.get_id().hex())
 
         return json_response(found_resources)
+
+    @exceptions_to_http(SerializedError)
+    async def get_ids_by_tag(self, request: Request):
+        resource = await self._get_resource_for_request(request)
+        ids_by_tag = {}
+        for specific_tag in resource.get_most_specific_tags():
+            for tag in specific_tag.tag_classes():
+                if tag.__qualname__ not in ids_by_tag.keys():
+                    ids_by_tag[tag.__qualname__] = []
+                ids_by_tag[tag.__qualname__].append(resource.get_id().hex())
+        for descendant in await resource.get_descendants():
+            for specific_tag in descendant.get_most_specific_tags():
+                for tag in specific_tag.tag_classes():
+                    if tag.__qualname__ not in ids_by_tag.keys():
+                        ids_by_tag[tag.__qualname__] = []
+                    ids_by_tag[tag.__qualname__].append(descendant.get_id().hex())
+                    for ancestor in await descendant.get_ancestors():
+                        ids_by_tag[tag.__qualname__].append(ancestor.get_id().hex())
+        return json_response(ids_by_tag)
 
     @exceptions_to_http(SerializedError)
     async def add_tag(self, request: Request) -> Response:

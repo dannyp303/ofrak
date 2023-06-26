@@ -413,6 +413,11 @@ export class Resource {
   async search_for_bytes() {
     throw new NotImplementedError("search_for_bytes");
   }
+  
+  async get_ids_by_tag() {
+    throw new NotImplementedError("get_ids_by_tag");
+
+  }
   /***
    * Return the string representation of a comment, which includes its range as prefix if it
    * has one.

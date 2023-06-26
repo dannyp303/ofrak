@@ -44,9 +44,22 @@
 
 <script>
   import Checkbox from "./Checkbox.svelte";
+  import { selectedResource } from "./stores";
   export let rootResource, searchFilter;
-  let searchType, searchQuery, bytesInput, regex, placeholderString, caseIgnore;
-  let searchTypes = ["String", "Bytes"];
+  let searchType,
+    searchQuery,
+    bytesInput,
+    regex,
+    placeholderString,
+    caseIgnore,
+    ofrakTagsPromise;
+  let searchTypes = ["String", "Bytes", "Tags", "Attributes"];
+
+  async function getIdsByTag() {
+    ofrakTagsPromise = rootResource.get_ids_by_tag();
+  }
+  getIdsByTag();
+  $: getIdsByTag(searchType, $selectedResource);
 
   $: if (searchQuery != null && searchType == "Bytes") {
     try {
@@ -78,23 +91,43 @@
       </option>
     {/each}
   </select>
-  <form
-    on:keyup|preventDefault="{async (e) => {
-      if (searchType == 'String') {
-        searchFilter = await rootResource.search_for_string(
-          searchQuery,
-          regex,
-          caseIgnore
-        );
-      } else if (searchType == 'Bytes') {
-        searchFilter = await rootResource.search_for_bytes(searchQuery, false);
-      }
-    }}"
-  >
-    <label>
-      <input placeholder="{placeholderString}" bind:value="{searchQuery}" />
-    </label>
-  </form>
+  {#if searchType == "String" || searchType == "Bytes"}
+    <form
+      on:keyup|preventDefault="{async (e) => {
+        if (searchType == 'String') {
+          searchFilter = await rootResource.search_for_string(
+            searchQuery,
+            regex,
+            caseIgnore
+          );
+        } else if (searchType == 'Bytes') {
+          searchFilter = await rootResource.search_for_bytes(
+            searchQuery,
+            false
+          );
+        }
+      }}"
+    >
+      <label>
+        <input placeholder="{placeholderString}" bind:value="{searchQuery}" />
+      </label>
+    </form>
+  {:else if searchType == "Tags"}
+    {#await ofrakTagsPromise}
+      <option>Loading...</option>
+    {:then ofrakTags}
+      <select bind:value="{searchFilter}">
+        <option value="{null}">Tags</option>
+        {#each Object.entries(ofrakTags) as [ofrakTag, ids]}
+          {#if ids.length != 0}
+            <option value="{ids}">
+              {ofrakTag}
+            </option>
+          {/if}
+        {/each}
+      </select>
+    {/await}
+  {/if}
 </div>
 
 <div class="optionbar">
