@@ -65,7 +65,7 @@
     selected,
     settings,
     resourceNodeDataMap,
-    dataLength
+    dataLength,
   } from "../stores.js";
   import { onMount } from "svelte";
   import { screenHeight } from "./stores";
@@ -94,10 +94,7 @@
     childRanges = r;
   });
 
-  $: childRangesPromise = calculateRanges(
-    $selectedResource,
-    $settings.colors
-  );
+  $: childRangesPromise = calculateRanges($selectedResource, $settings.colors);
 
   // React to local data searches
   $: if (dataSearchResults) {
@@ -106,14 +103,20 @@
       localDataSearchResults.matches?.length > 0 &&
       (localDataSearchResults.index || localDataSearchResults.index === 0)
     ) {
-        currentPosition =
-          localDataSearchResults.matches[localDataSearchResults.index][0];
+      currentPosition =
+        localDataSearchResults.matches[localDataSearchResults.index][0];
     }
   }
 
-  $: chunksPromise = getNewData($selectedResource, currentPosition, $dataLength);
+  $: chunksPromise = getNewData(
+    $selectedResource,
+    currentPosition,
+    $dataLength
+  );
 
-  $: chunksPromise.then((r) => {chunks = r})
+  $: chunksPromise.then((r) => {
+    chunks = r;
+  });
 
   $: resetResource($selectedResource);
 
@@ -266,7 +269,7 @@
     hexDisplay = document.getElementById("scrollable");
     $screenHeight =
       Math.floor(hexDisplay.offsetHeight / lineHeight) * (alignment - 1);
-      chunksPromise = getNewData();
+    chunksPromise = getNewData();
   }
 
   onMount(() => {
@@ -377,9 +380,7 @@
   </div>
   {#if resourceData != undefined}
     <div class="minimap">
-      <MinimapView
-        bind:currentPosition="{currentPosition}"
-      />
+      <MinimapView bind:currentPosition="{currentPosition}" />
     </div>
   {/if}
 </div>

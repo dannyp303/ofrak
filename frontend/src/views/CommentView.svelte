@@ -63,7 +63,7 @@
     selected,
     selectedResource,
     resourceNodeDataMap,
-    dataLength
+    dataLength,
   } from "../stores.js";
   import Button from "../utils/Button.svelte";
 
@@ -85,7 +85,9 @@
       let optional_range = null;
       if ($dataLength) {
         let startOffset = startInput.value ? startInput.value : "0";
-        let endOffset = endInput.value ? endInput.value : $dataLength.toString();
+        let endOffset = endInput.value
+          ? endInput.value
+          : $dataLength.toString();
         startOffset = calculator.calculate(startOffset);
         endOffset = calculator.calculate(endOffset);
         optional_range = [startOffset, endOffset];

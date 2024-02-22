@@ -48,7 +48,7 @@
     selected,
     selectedResource,
     settings,
-    dataLength
+    dataLength,
   } from "./stores.js";
   import { keyEventToString, shortcuts } from "./keyboard.js";
 
@@ -77,7 +77,7 @@
 
   $: dataLenPromise.then((r) => {
     $dataLength = r;
-  })
+  });
 
   $: if ($selected !== undefined) {
     currentResource = resources[$selected];

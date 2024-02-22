@@ -67,7 +67,7 @@
     selected,
     selectedResource,
     resourceNodeDataMap,
-    dataLength
+    dataLength,
   } from "../stores.js";
   import Button from "../utils/Button.svelte";
 

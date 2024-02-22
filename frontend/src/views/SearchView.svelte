@@ -164,10 +164,7 @@
   </div>
   {#each results as matched_resource}
     <div class="resultsbox">
-      <ResourceTreeNode
-        rootResource="{matched_resource}"
-        collapsed="false"
-      />
+      <ResourceTreeNode rootResource="{matched_resource}" collapsed="false" />
     </div>
   {/each}
 </div>

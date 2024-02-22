@@ -23,17 +23,11 @@
 <div class="minimap">
   <JumpToOffset bind:currentPosition="{currentPosition}" />
   {#if carouselSelection === "Entropy"}
-    <EntropyView
-      bind:currentPosition="{currentPosition}"
-    />
+    <EntropyView bind:currentPosition="{currentPosition}" />
   {:else if carouselSelection === "Byteclass"}
-    <ByteclassView
-      bind:currentPosition="{currentPosition}"
-    />
+    <ByteclassView bind:currentPosition="{currentPosition}" />
   {:else if carouselSelection === "Magnitude"}
-    <MagnitudeView
-      bind:currentPosition="{currentPosition}"
-    />
+    <MagnitudeView bind:currentPosition="{currentPosition}" />
   {/if}
   <div class="carousel">
     <CarouselSelector

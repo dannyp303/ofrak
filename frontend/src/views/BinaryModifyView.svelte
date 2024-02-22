@@ -92,12 +92,7 @@
   const selectedResource = $_selectedResource;
 
   export let modifierView;
-  let startInput,
-    endInput,
-    startOffset,
-    endOffset,
-    errorMessage,
-    userData;
+  let startInput, endInput, startOffset, endOffset, errorMessage, userData;
 
   function refreshResource() {
     // Force hex view refresh with colors
