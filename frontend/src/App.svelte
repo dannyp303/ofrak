@@ -41,9 +41,15 @@
   import StartView from "./views/StartView.svelte";
   import TextView from "./views/TextView.svelte";
   import ProjectManagerView from "./project/ProjectManagerView.svelte";
+  import DataView from "./views/DataView.svelte";
 
   import { printConsoleArt } from "./console-art.js";
-  import { selected, selectedResource, settings } from "./stores.js";
+  import {
+    selected,
+    selectedResource,
+    settings,
+    resourceNodeDataMap,
+  } from "./stores.js";
   import { keyEventToString, shortcuts } from "./keyboard.js";
 
   import { writable } from "svelte/store";
@@ -57,7 +63,6 @@
     useAssemblyView = false,
     useTextView = false,
     rootResourceLoadPromise = new Promise((resolve) => {}),
-    resourceNodeDataMap = {},
     resources = {};
   let carouselSelection,
     currentResource,
@@ -177,13 +182,11 @@ Answer by running riddle.answer('your answer here') from the console.`);
               this="{modifierView}"
               dataLenPromise="{dataLenPromise}"
               bind:modifierView="{modifierView}"
-              bind:resourceNodeDataMap="{resourceNodeDataMap}"
             />
           {:else}
             <ResourceTreeView
               rootResource="{rootResource}"
               bind:bottomLeftPane="{bottomLeftPane}"
-              bind:resourceNodeDataMap="{resourceNodeDataMap}"
               bind:modifierView="{modifierView}"
               bind:showProjectManager="{showProjectManager}"
               bind:showRootResource="{showRootResource}"
@@ -202,18 +205,7 @@ Answer by running riddle.answer('your answer here') from the console.`);
         </Pane>
       </Split>
       <Pane slot="second" scrollY="{hexScrollY}">
-        {#if useAssemblyView}
-          <AssemblyView />
-        {:else if useTextView}
-          <TextView />
-        {:else}
-          <HexView
-            dataLenPromise="{dataLenPromise}"
-            resources="{resources}"
-            scrollY="{hexScrollY}"
-            bind:resourceNodeDataMap="{resourceNodeDataMap}"
-          />
-        {/if}
+        <DataView dataLenPromise="{dataLenPromise}" resources="{resources}" />
         <!-- 
           Named slot must be outside {#if} because of: 
           https://github.com/sveltejs/svelte/issues/5604 
@@ -242,7 +234,6 @@ Answer by running riddle.answer('your answer here') from the console.`);
     bind:showProjectManager="{showProjectManager}"
     bind:resources="{resources}"
     bind:rootResource="{rootResource}"
-    bind:resourceNodeDataMap="{resourceNodeDataMap}"
   />
 {/if}
 

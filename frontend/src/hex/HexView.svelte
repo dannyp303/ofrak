@@ -61,12 +61,17 @@
   import LoadingText from "../utils/LoadingText.svelte";
   import MinimapView from "./MinimapView.svelte";
   import { chunkList, buf2hex, hexToChar } from "../helpers.js";
-  import { selectedResource, selected, settings } from "../stores.js";
+  import {
+    selectedResource,
+    selected,
+    settings,
+    resourceNodeDataMap,
+  } from "../stores.js";
   import { onMount } from "svelte";
   import { screenHeight } from "./stores";
   import SearchBar from "../utils/SearchBar.svelte";
 
-  export let resources, dataLenPromise, resourceNodeDataMap;
+  export let resources, dataLenPromise;
   let dataSearchResults = {};
   let childRangesPromise = Promise.resolve(undefined);
   let chunkDataPromise = Promise.resolve(undefined);
@@ -248,7 +253,7 @@
         resources[childRange.resource_id]?.get_caption() ||
         childRange.resource_id;
       info.onDoubleClick = () => {
-        resourceNodeDataMap[$selected].collapsed = false;
+        $resourceNodeDataMap[$selected].collapsed = false;
         $selected = childRange.resource_id;
       };
     }

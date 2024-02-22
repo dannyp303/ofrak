@@ -53,7 +53,6 @@
   export let rootResource,
     modifierView,
     bottomLeftPane,
-    resourceNodeDataMap = {},
     showProjectManager,
     showRootResource;
 
@@ -76,7 +75,6 @@
 <div class="hbox">
   <div class="toolbar">
     <ResourceTreeToolbar
-      bind:resourceNodeDataMap="{resourceNodeDataMap}"
       bind:modifierView="{modifierView}"
       bind:bottomLeftPane="{bottomLeftPane}"
       bind:showProjectManager="{showProjectManager}"
@@ -96,7 +94,6 @@
       <ResourceTreeNode
         rootResource="{rootResource}"
         bind:searchResults="{searchResults}"
-        bind:resourceNodeDataMap="{resourceNodeDataMap}"
       />
     </div>
   </div>
