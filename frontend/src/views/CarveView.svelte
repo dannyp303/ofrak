@@ -67,15 +67,12 @@
     selected,
     selectedResource,
     resourceNodeDataMap,
+    dataLength
   } from "../stores.js";
   import Button from "../utils/Button.svelte";
 
-  export let modifierView, dataLenPromise;
-  let startInput, endInput, dataLength, errorMessage;
-
-  $: dataLenPromise.then((r) => {
-    dataLength = r;
-  });
+  export let modifierView;
+  let startInput, endInput, errorMessage;
 
   function refreshResource() {
     // Force tree view children refresh
@@ -132,9 +129,7 @@
       <input
         type="text"
         bind:this="{endInput}"
-        value="{dataLength && !endInput.value
-          ? `0x${dataLength.toString(16)}`
-          : ''}"
+        value="0x{$dataLength.toString(16)}"
       />
     </label>
     {#if errorMessage}

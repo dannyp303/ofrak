@@ -48,7 +48,7 @@
     selected,
     selectedResource,
     settings,
-    resourceNodeDataMap,
+    dataLength
   } from "./stores.js";
   import { keyEventToString, shortcuts } from "./keyboard.js";
 
@@ -59,7 +59,6 @@
   let showRootResource = false,
     showProjectManager = false,
     dataLenPromise = Promise.resolve([]),
-    hexScrollY = writable({}),
     useAssemblyView = false,
     useTextView = false,
     rootResourceLoadPromise = new Promise((resolve) => {}),
@@ -75,6 +74,10 @@
   if (riddleAnswered === null || riddleAnswered === undefined) {
     riddleAnswered = false;
   }
+
+  $: dataLenPromise.then((r) => {
+    $dataLength = r;
+  })
 
   $: if ($selected !== undefined) {
     currentResource = resources[$selected];
@@ -92,7 +95,6 @@
       useTextView = ["ofrak.core.binary.GenericText"].some((tag) =>
         currentResource.has_tag(tag)
       );
-      $hexScrollY.top = 0;
       document.title = "OFRAK App – " + currentResource.get_caption();
     }
     if ($selected !== window.location.hash.slice(1)) {
@@ -180,7 +182,6 @@ Answer by running riddle.answer('your answer here') from the console.`);
           {#if modifierView}
             <svelte:component
               this="{modifierView}"
-              dataLenPromise="{dataLenPromise}"
               bind:modifierView="{modifierView}"
             />
           {:else}
@@ -204,8 +205,8 @@ Answer by running riddle.answer('your answer here') from the console.`);
           {/if}
         </Pane>
       </Split>
-      <Pane slot="second" scrollY="{hexScrollY}">
-        <DataView dataLenPromise="{dataLenPromise}" resources="{resources}" />
+      <Pane slot="second">
+        <DataView resources="{resources}" />
         <!-- 
           Named slot must be outside {#if} because of: 
           https://github.com/sveltejs/svelte/issues/5604 

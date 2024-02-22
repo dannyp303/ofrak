@@ -85,23 +85,19 @@
   import {
     selected,
     resourceNodeDataMap,
+    dataLength,
     selectedResource as _selectedResource,
   } from "../stores.js";
   import Button from "../utils/Button.svelte";
   const selectedResource = $_selectedResource;
 
-  export let modifierView, dataLenPromise;
+  export let modifierView;
   let startInput,
     endInput,
     startOffset,
     endOffset,
-    dataLength,
     errorMessage,
     userData;
-
-  $: dataLenPromise.then((r) => {
-    dataLength = r;
-  });
 
   function refreshResource() {
     // Force hex view refresh with colors
@@ -227,9 +223,7 @@
         <input
           type="text"
           bind:this="{endInput}"
-          value="{dataLength && !endInput.value
-            ? `0x${dataLength.toString(16)}`
-            : ''}"
+          value="0x{$dataLength.toString(16)}"
         />
       </label>
       {#if errorMessage}

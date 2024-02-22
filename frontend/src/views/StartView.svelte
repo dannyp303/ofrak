@@ -154,9 +154,7 @@
     showRootResource,
     showProjectManager,
     resources,
-    rootResource,
-    browsedFiles,
-    fileinput;
+    rootResource;
   let dragging = false,
     selectedPreExistingRoot = null,
     preExistingRootsPromise = new Promise(() => {}),
@@ -168,7 +166,9 @@
     newProjectName,
     gitUrl,
     projectPath,
-    showAdvancedProjectOptions;
+    showAdvancedProjectOptions,
+    browsedFiles,
+    fileinput;
   const warnFileSize = 250 * 1024 * 1024;
   const fileChunkSize = warnFileSize;
 

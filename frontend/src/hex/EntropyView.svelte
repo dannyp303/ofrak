@@ -29,10 +29,10 @@
 
   import { screenHeight } from "./stores.js";
   import { hexToByteArray } from "../helpers.js";
-  import { selectedResource, settings } from "../stores.js";
+  import { selectedResource, settings, dataLength } from "../stores.js";
 
   import { onMount } from "svelte";
-  export let dataLength, currentPosition;
+  export let currentPosition;
   let data = undefined;
 
   $: bgcolors = hexToByteArray($settings.background.slice(1));
@@ -109,9 +109,9 @@
       // Offset Y by 0.5 because of: https://stackoverflow.com/a/48970774
       context.strokeRect(
         0,
-        Math.ceil((currentPosition / dataLength) * canvas.height) - 0.5,
+        Math.ceil((currentPosition / $dataLength) * canvas.height) - 0.5,
         alignment,
-        Math.ceil(($screenHeight / dataLength) * canvas.height) - 0.5
+        Math.ceil(($screenHeight / $dataLength) * canvas.height) - 0.5
       );
     }
 
@@ -127,7 +127,7 @@
     bind:this="{canvas}"
     on:mousedown="{(e) => {
       currentPosition = Math.floor(
-        dataLength * (e.offsetY / canvas.offsetHeight)
+        $dataLength * (e.offsetY / canvas.offsetHeight)
       );
       clicking = true;
     }}"
@@ -140,7 +140,7 @@
     on:mousemove="{(e) => {
       if (clicking) {
         currentPosition = Math.floor(
-          dataLength * (e.offsetY / canvas.offsetHeight)
+          $dataLength * (e.offsetY / canvas.offsetHeight)
         );
         clicking = true;
       }

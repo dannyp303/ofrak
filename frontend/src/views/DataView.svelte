@@ -39,7 +39,7 @@
   import TextView from "./TextView.svelte";
   import { onMount } from "svelte";
   import Tabs from "../utils/Tabs.svelte";
-  export let dataLenPromise, resources;
+  export let resources;
   let hasTextView = false;
   let hasAsmView = false;
   let hasDecompView = false;
@@ -55,7 +55,6 @@
     component: HexView,
     props: {
       resources: resources,
-      dataLenPromise: dataLenPromise,
     },
   };
 
