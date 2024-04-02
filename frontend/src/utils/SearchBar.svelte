@@ -160,9 +160,35 @@
     placeholderString = "Search for Bytes";
   }
 
-  // $: doSearch(searchOptions.searchType)
 </script>
 
+
+<!-- TODO: This all needs to be decoupled from search types. 
+  My proposal is to provide a list of search option classes that look like
+  searchOptions = [
+    {
+      type: "String",
+      options: {
+        regex: {
+          label: "Pattern",
+          placeholder: "Search for a Regex Pattern"
+        }
+      }
+    },...
+  ]
+  And an internal object that holds the selected types and optins like:
+  selectedSearchOption = {
+    type: "String",
+    options: {
+      regex: {
+        label: "Pattern",
+        placeholder: "Search for a Regex Pattern",
+        value: true,
+      }
+    }
+  }
+  The search bar was initially designed like this, but was coupled closer with the types when being combined with the hex view search. 
+-->
 <div class="searchbar">
   <select bind:value="{searchOptions.searchType}">
     {#each searchTypes as type}
@@ -175,7 +201,7 @@
   <form
     on:submit="{async (e) => {
       e.preventDefault();
-      if ((searchQuery === undefined || searchQuery.length === 0) && (["Bytes", "String"].includes(searchOptions.searchType))) {
+      if ((searchQuery === undefined || searchQuery.length === 0)) {
         searchResults.matches = undefined;
         prevQuery = '';
         prevOptions = {};
@@ -194,7 +220,7 @@
       if (
         (!liveUpdate ||
         searchQuery === undefined ||
-        searchQuery.length === 0) && (["Bytes", "String"].includes(searchOptions.searchType))
+        searchQuery.length === 0)
       ) {
         searchResults.matches = undefined;
         prevQuery = '';
