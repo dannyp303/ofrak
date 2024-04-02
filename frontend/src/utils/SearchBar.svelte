@@ -160,7 +160,7 @@
     placeholderString = "Search for Bytes";
   }
 
-  $: doSearch(searchOptions.searchType)
+  // $: doSearch(searchOptions.searchType)
 </script>
 
 <div class="searchbar">
