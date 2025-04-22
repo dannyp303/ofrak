@@ -73,10 +73,26 @@ class Toolchain(ABC):
                 f"No binary file parser found for format " f"{toolchain_config.file_format.name}!"
             )
 
-        self._preprocessor_flags: List[str] = toolchain_config.additional_preprocessor_flags if toolchain_config.additional_preprocessor_flags is not None else []
-        self._compiler_flags: List[str] = toolchain_config.additional_compiler_options if toolchain_config.additional_compiler_options is not None else []
-        self._assembler_flags: List[str] = toolchain_config.additional_assembler_options if toolchain_config.additional_assembler_options is not None else []
-        self._linker_flags: List[str] = toolchain_config.additional_linker_flags if toolchain_config.additional_linker_flags is not None else []
+        self._preprocessor_flags: List[str] = (
+            toolchain_config.additional_preprocessor_flags
+            if toolchain_config.additional_preprocessor_flags is not None
+            else []
+        )
+        self._compiler_flags: List[str] = (
+            toolchain_config.additional_compiler_options
+            if toolchain_config.additional_compiler_options is not None
+            else []
+        )
+        self._assembler_flags: List[str] = (
+            toolchain_config.additional_assembler_options
+            if toolchain_config.additional_assembler_options is not None
+            else []
+        )
+        self._linker_flags: List[str] = (
+            toolchain_config.additional_linker_flags
+            if toolchain_config.additional_linker_flags is not None
+            else []
+        )
         self._config = toolchain_config
         self._logger = logger
 
